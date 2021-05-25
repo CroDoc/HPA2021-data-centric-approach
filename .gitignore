@@ -1,0 +1,13 @@
+.ipynb_checkpoints/
+publichpa/*
+train/*
+segmentation/*
+finetuned/
+models/
+train_cells/
+train_nuclei/
+publichpa_cells/
+publichpa_nuclei/
+__pycache__/
+*.py[cod]
+*$py.class
