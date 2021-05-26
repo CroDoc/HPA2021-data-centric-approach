@@ -23,14 +23,12 @@ Cell and nuclei masks generation using HPA-Cell-Segmentator:
 ```
 python segmentator.py -i train -n train_nuclei -c train_cells -b 128
 python segmentator.py -i publichpa -n publichpa_nuclei -c publichpa_cells -b 128
-python segmentator.py -i test -n test_nuclei -c test_cells -b 128
 ```
 
 Image cropping and resizing:
 ```
 python image_cutter.py -i train -m train_cells -o dataset
 python image_cutter.py -i publichpa -m publichpa_cells -o dataset
-python image_cutter.py -i test -m test_cells -o test_dataset
 
 ```
 
@@ -64,6 +62,10 @@ python finetuner.py -c focal -l models/b0-focal-13.pt -s finetuned -b 32 -r
 python finetuner.py -c focal -l models/b0-focal-14.pt -s finetuned -b 32 -r
 python finetuner.py -c focal -l models/b0-focal-15.pt -s finetuned -b 32 -r
 ```
+
+## Inference & sumbission file generation
+
+The code that was used for inference and generating the final submission file(.csv) in the Kaggle competition can be found in `HPAsubmission.ipynb` or in the Kaggle notebook.
 
 # Solution overview
 1. Segmentation -> HPA-Cell-Segmentation
