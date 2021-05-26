@@ -1,3 +1,69 @@
+# Setup
+
+The easiest way is to use the code from this repo is to run it in a docker container. We suggest using the official pytorch [docker image](https://hub.docker.com/layers/pytorch/pytorch/1.7.1-cuda11.0-cudnn8-devel/images/sha256-f0d0c1b5d4e170b4d2548d64026755421f8c0df185af2c4679085a7edc34d150?context=explore) and installing the following packages using pip:
+
+```
+pip install https://github.com/CellProfiling/HPA-Cell-Segmentation/archive/master.zip
+pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+```
+
+# Usage
+
+## Dataset preparation
+
+Download the dataset to the corresponding folders (train/publichpa/test).
+
+Getting the publichpa dataset:
+```
+python download_publichpa.py
+```
+
+Cell and nuclei masks generation using HPA-Cell-Segmentator:
+```
+python segmentator.py -i train -n train_nuclei -c train_cells -b 128
+python segmentator.py -i publichpa -n publichpa_nuclei -c publichpa_cells -b 128
+python segmentator.py -i test -n test_nuclei -c test_cells -b 128
+```
+
+Image cropping and resizing:
+```
+python image_cutter.py -i train -m train_cells -o dataset
+python image_cutter.py -i publichpa -m publichpa_cells -o dataset
+python image_cutter.py -i test -m test_cells -o test_dataset
+
+```
+
+## Training
+
+Dataset preparation (rerun before training/after finetuning - the validation data will be different):
+```
+python data_loader.py -i dataset
+```
+
+Training:
+```
+python train_me.py -c bce -s models -n b0-bce -b 32 -p
+```
+or
+```
+python train_me.py -c focal -s models -n b0-focal -b 32 -r
+```
+
+Finetunning:
+```
+python finetuner.py -c bce -l models/b0-bce-12.pt -s finetuned -b 32 -p
+python finetuner.py -c bce -l models/b0-bce-13.pt -s finetuned -b 32 -p
+python finetuner.py -c bce -l models/b0-bce-14.pt -s finetuned -b 32 -p
+python finetuner.py -c bce -l models/b0-bce-15.pt -s finetuned -b 32 -p
+```
+or
+```
+python finetuner.py -c focal -l models/b0-focal-12.pt -s finetuned -b 32 -r
+python finetuner.py -c focal -l models/b0-focal-13.pt -s finetuned -b 32 -r
+python finetuner.py -c focal -l models/b0-focal-14.pt -s finetuned -b 32 -r
+python finetuner.py -c focal -l models/b0-focal-15.pt -s finetuned -b 32 -r
+```
+
 # Solution overview
 1. Segmentation -> HPA-Cell-Segmentation
 2. Dataset -> 512x512 cell images (20% removed)
@@ -88,6 +154,3 @@ Seems that even extreme values such as 0.6/0.4 tend to work well here. We did no
 # Conclusion
 
 512x512 images, re-labeling, simple network (B0), fine-tuning & final confidence weighting seem to work well enough for this problem.
-
-# TODO
-setup + usage instructions (expected in the next 24h)
