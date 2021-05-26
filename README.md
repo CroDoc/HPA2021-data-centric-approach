@@ -142,7 +142,7 @@ Loss: BCELoss
 
 Since it was hard to estimate the "best" model on the local validation set, we used the idea of checkpoint ensembling to try to avoid overfitting & boost our score.
 
-We oversampled classes with less examples or less true positives and tried to avoid overusing images with more assigned labels. 
+We oversampled classes with less examples or less true positives and tried to avoid overusing images with more assigned labels.
 
 # 7. Fine-tuning
 
@@ -156,4 +156,5 @@ Seems that even extreme values such as 0.6/0.4 tend to work well here. We did no
 
 # Conclusion
 
+Our final submissions got 0.54389 and 0.54361 on the Private Leaderboard.
 512x512 images, re-labeling, simple network (B0), fine-tuning & final confidence weighting seem to work well enough for this problem.
