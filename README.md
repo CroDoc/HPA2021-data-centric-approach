@@ -5,6 +5,7 @@ The easiest way is to use the code from this repo is to run it in a docker conta
 ```
 pip install https://github.com/CellProfiling/HPA-Cell-Segmentation/archive/master.zip
 pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+pip install efficientnet_pytorch
 ```
 
 # Usage
