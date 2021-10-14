@@ -42,12 +42,12 @@ def run(opt):
     cam_loader, dataset = get_cam_loader(opt.input_folder, opt.batch_size, opt.workers)
     net = get_efficient_net_b0(opt.network_weights)
 
-    print(net)
-    return
+    #print(net)
+    #return
 
-    target_layer = net._blocks[-1]
+    #target_layer = net._blocks[-1]
     #target_layer = net._conv_head
-    #target_layer = net._bn1
+    target_layer = net._bn1
 
     cam = GradCAM(model=net, target_layer=target_layer, use_cuda=(device=="cuda:0"))
 
