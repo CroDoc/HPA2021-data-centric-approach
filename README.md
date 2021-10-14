@@ -156,3 +156,11 @@ Seems that even extreme values such as 0.6/0.4 tend to work well here. We did no
 
 Our final submissions got 0.54389 and 0.54361 on the Private Leaderboard.
 512x512 images, re-labeling, simple network (B0), fine-tuning & final confidence weighting seem to work well enough for this problem.
+
+# Grad-CAM
+
+```
+python segmentator.py -i CAM_images -n CAM_nuclei -c CAM_cells -b 128
+python image_cutter.py -i CAM_images -m CAM_cells -o CAM_dataset
+python run_gradcam.py -i CAM_dataset -o CAM_output
+```
