@@ -11,3 +11,4 @@ publichpa_nuclei/
 __pycache__/
 *.py[cod]
 *$py.class
+CAM_*/
