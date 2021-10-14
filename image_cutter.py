@@ -141,8 +141,8 @@ if __name__ == "__main__":
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    if not os.path.exists(mask_dir):
-        os.makedirs(mask_dir)
+    #if not os.path.exists(mask_dir):
+        #os.makedirs(mask_dir)
 
     mt = glob.glob(read_dir + '*_red.png')
 
