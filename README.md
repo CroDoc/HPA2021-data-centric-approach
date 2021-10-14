@@ -1,12 +1,9 @@
 # Setup
 
-The easiest way is to use the code from this repo is to run it in a docker container. We suggest using the official pytorch [docker image](https://hub.docker.com/layers/pytorch/pytorch/1.7.1-cuda11.0-cudnn8-devel/images/sha256-f0d0c1b5d4e170b4d2548d64026755421f8c0df185af2c4679085a7edc34d150?context=explore) and installing the following packages using pip:
+The easiest way is to use the code from this repo is to run it in a docker container. We suggest using the official pytorch [docker image](https://hub.docker.com/layers/pytorch/pytorch/1.9.0-cuda11.1-cudnn8-devel/images/sha256-ed167cae955fa654cefc3663fc0c7b16ee9c8e7ed307cb03306d6ea7a9f7b37b?context=explore) and installing the requirements running:
 
 ```
-pip install https://github.com/CellProfiling/HPA-Cell-Segmentation/archive/master.zip
-pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
-pip install efficientnet_pytorch
-pip install grad-cam
+$sh install-requirements.sh
 ```
 
 # Usage
