@@ -45,40 +45,40 @@ def get_paddings(x_len, y_len):
 
 def load_this_image(image_path):
     image = np.array(cv2.imread(image_path, cv2.IMREAD_UNCHANGED))
-    
+
     if image.dtype == np.uint8:
         image = image.astype(np.uint16)
         image *= 257
-    
+
     return image
 
 def get_cropped_channel_image(image, top_left, bottom_right, mask, cell_id):
-    
+
     image = image[top_left[0]:bottom_right[0]+1,top_left[1]:bottom_right[1]+1].copy()
 
     image[(mask != 0) * (mask != cell_id)] = 0
 
     pad_left, pad_right, pad_up, pad_down = get_paddings(image.shape[0], image.shape[1])
-    
+
     image = np.pad(image, [(pad_up, pad_down), (pad_left, pad_right)], mode='constant')
 
     return image
 
 def get_mask_info(mask):
     true_points = np.argwhere(mask)
-    
+
     if not true_points.any():
         return np.array([0, 0]), np.array([0, 0])
-    
+
     top_left = true_points.min(axis=0)
     bottom_right = true_points.max(axis=0)
 
     return top_left, bottom_right
 
 def solve(name, read_dir, save_dir, mask_dir):
-    
+
     ID = name.replace('_red.png','').split('/')[-1]
-    
+
     cell_mask = np.load(mask_dir + ID + '.npy')
     max_id = cell_mask.max()
 
@@ -90,13 +90,13 @@ def solve(name, read_dir, save_dir, mask_dir):
         image = load_this_image(read_dir + image_filename)
 
         image_per_channel[channel] = image
-    
+
     for curr_id in range(1, max_id+1):
-        
+
         cell_info = get_mask_info(cell_mask == curr_id)
-        
+
         top_left, bottom_right = cell_info[0], cell_info[1]
-        
+
         dim1 = bottom_right[0]+1 - top_left[0]
         dim2 = bottom_right[1]+1 - top_left[1]
 
@@ -111,16 +111,16 @@ def solve(name, read_dir, save_dir, mask_dir):
         top_left[1] = max(0, top_left[1])
         bottom_right[0] = min(cell_mask.shape[0], bottom_right[0])
         bottom_right[1] = min(cell_mask.shape[1], bottom_right[1])
-        
-        for channel in ['_red', '_blue', '_green']:#, '_yellow']:
-        
+
+        for channel in ['_red', '_blue', '_green', '_yellow']:
+
             save_path = save_dir + ID + '_' + str(curr_id-1) + channel + '.png'
 
             big_image = image_per_channel[channel]
             image = get_cropped_channel_image(big_image, cell_info[0], cell_info[1], cell_mask[top_left[0]:bottom_right[0]+1,top_left[1]:bottom_right[1]+1], curr_id)
             image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
             cv2.imwrite(save_path, image)
-            
+
     return
 
 if __name__ == "__main__":
@@ -151,5 +151,5 @@ if __name__ == "__main__":
     for x in mt:
         pool.apply_async(solve, args=(x,read_dir, save_dir, mask_dir,))
 
-    pool.close()    
+    pool.close()
     pool.join()
