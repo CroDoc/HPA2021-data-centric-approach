@@ -19,4 +19,6 @@ jupyter nbextension enable --py widgetsnbextension
 pip install opencv-python
 
 pip install efficientnet_pytorch
+pip install ttach
+pip install tqdm
 pip install grad-cam

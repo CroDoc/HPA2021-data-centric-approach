@@ -1,0 +1,89 @@
+import torch
+import pickle
+from torch.utils.data import Dataset, DataLoader
+import os
+from torchvision import transforms
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision.models as models
+import csv
+import argparse
+import cv2
+import numpy as np
+
+from efficientnet_pytorch import EfficientNet
+from code.dataset_generator import get_cam_loader
+
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+def get_efficient_net_b0(state_dict_path):
+    net = EfficientNet.from_name('efficientnet-b0', in_channels=4, num_classes=18, image_size=512)
+    net._fc = nn.Sequential(nn.Linear(1280, 18), nn.Sigmoid())
+
+    if torch.cuda.is_available():
+        net.load_state_dict(torch.load(state_dict_path))
+        net.to(device)
+    else:
+        net.load_state_dict(torch.load(state_dict_path ,map_location=device))
+
+    net.eval()
+
+    return net
+
+def run(opt):
+
+    if not os.path.exists(opt.output_folder):
+        os.makedirs(opt.output_folder)
+
+    cam_loader, dataset = get_cam_loader(opt.input_folder, opt.batch_size, opt.workers)
+    net = get_efficient_net_b0(opt.network_weights)
+
+    print(net)
+    return
+
+    target_layer = net._blocks[-1]
+    #target_layer = net._conv_head
+    #target_layer = net._bn1
+
+    cam = GradCAM(model=net, target_layer=target_layer, use_cuda=(device=="cuda:0"))
+
+    for i, data in enumerate(cam_loader, 0):
+
+        images, indices = data
+        inputs = images.to(device)
+
+        grayscale_cams = cam(input_tensor=inputs, aug_smooth=True)
+
+        for batch_index in range(len(indices)):
+            dataset_index = indices[batch_index].item()
+            metadata = dataset.image_metadata[dataset_index]
+
+            image_filename = opt.output_folder + '/' + metadata.image_name + '.png'
+
+            grayscale_cam = grayscale_cams[batch_index, :]
+            rgb_image = np.array(images[batch_index,:3])
+            rgb_image = rgb_image.transpose(1, 2, 0)
+            rgb_image = rgb_image[...,[2,1,0]]
+
+            cam_image = show_cam_on_image(rgb_image, grayscale_cam, use_rgb=False)#, colormap=cv2.COLORMAP_TURBO)
+
+            cv2.imwrite(image_filename, cam_image)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input_folder', help='input folder', action='store', required=True)
+    parser.add_argument('-o', '--output_folder', default = 'CAM_output', help='output folder', action='store')
+    parser.add_argument('-n', '--network_weights', default='network/efficientnet_b0.pt', help='weights location for EfficientNetB0 network', action='store')
+    parser.add_argument('-b', '--batch_size', default=8, help='batch size', action='store', type=int)
+    parser.add_argument('-w', '--workers', default=16, help='number of workers', action='store', type=int)
+
+    opt = parser.parse_known_args()[0]
+
+    if opt.input_folder[-1] != '/':
+        opt.input_folder += '/'
+
+    run(opt)

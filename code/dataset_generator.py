@@ -14,6 +14,18 @@ csv_file = 'data/train.csv'
 
 LABEL_COUNT = 19
 
+def get_cam_loader(input_folder, batch_size, num_workers):
+    cam_cells = sorted(set(x.rsplit('_', 1)[0] for x in os.listdir(input_folder)))
+    cam_metadata = []
+
+    for cam_cell in cam_cells:
+        cam_metadata.append(ImageMetadata(cam_cell, input_folder, image_labels = None, metric_labels = None))
+
+    dataset = HPACellDataset(cam_metadata, label_map = None, transforms = transforms.Compose([transforms.ToTensor()]), is_test = True)
+    cam_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return cam_loader, dataset
+
 def get_test_loader(test_dir, batch_size = 32, num_workers = 16):
     image_id_to_image_name = generate_image_id_to_image_names_dictionary(test_dir)
 
@@ -29,12 +41,12 @@ def get_test_loader(test_dir, batch_size = 32, num_workers = 16):
     dataset = HPACellDataset(test_metadata, label_map = None, transforms = transforms.Compose([transforms.ToTensor()]), is_test = True)
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-    return test_loader, dataset 
+    return test_loader, dataset
 
 def parse_label_set(classes):
     if not classes:
         return []
-    
+
     return set(map(int, classes.split('|')))
 
 class ImageMetadata():
@@ -52,7 +64,7 @@ class ImageMetadata():
         self.loss = 0
 
         self.relabel = {}
-    
+
     def __repr__(self):
         return self.image_path + ' - ' + str(self.image_labels)
 
@@ -74,7 +86,7 @@ def generate_image_name_to_label_dictionary(data_directory):
 def generate_image_id_to_image_names_dictionary(data_directory):
 
     image_id_to_image_names_dictionary = {}
-    
+
     image_names = set(image.rsplit('_',1)[0] for image in os.listdir(data_directory))
 
     for image_name in image_names:
@@ -110,13 +122,13 @@ def get_public_data(image_id_to_image_names_dictionary, image_name_to_label_dict
 def get_train_data(image_id_to_image_names_dictionary, image_name_to_label_dictionary, data_directory):
     image_id_list = [row[0] for row in csv.reader(open(csv_file, 'r')) if row[0] != 'ID']
     return generate_image_metadata(image_id_list, image_id_to_image_names_dictionary, image_name_to_label_dictionary, data_directory)
-    
+
 class TrainValidationSplitter():
     def __init__(self, percent, active_labels, random_seed):
         self.percent = percent
         self.active_labels = set(active_labels)
         self.random_seed = random_seed
-    
+
     def split(self, image_metadata):
         random.seed(self.random_seed)
         random.shuffle(image_metadata)
@@ -128,7 +140,7 @@ class TrainValidationSplitter():
         return train_metadata, validation_metadata
 
 class HPACellDataset(Dataset):
-    
+
     def __init__(self, image_metadata, label_map, transforms, is_test=False, channels_num=4):
         self.image_metadata = image_metadata
         self.label_map = label_map
@@ -159,7 +171,7 @@ class HPACellDataset(Dataset):
                 label_tensor[index] = relabel[label]
 
         return label_tensor
-            
+
     def __getitem__(self, index):
 
         image_metadata = self.image_metadata[index]
@@ -171,13 +183,12 @@ class HPACellDataset(Dataset):
             image = cv2.imread(image_metadata.image_path + channel + '.png', cv2.IMREAD_UNCHANGED)
             image = image.astype(np.float32) / 65535.0
             channels.append(image)
-        
-        
+
         image = np.dstack(channels)
 
         if self.is_test:
             return self.transforms(image), index
-        
+
         image = self.transforms(image)
 
         return image, self.generate_label_tensor(image_metadata.image_labels, image_metadata.relabel), index
@@ -187,7 +198,7 @@ class FairSampler():
         self.image_metadata = image_metadata
         self.sample_size = sample_size
         self.index = 0
-    
+
     def sample(self):
 
         current_sample = []
@@ -207,7 +218,7 @@ class FairSampler():
             if random.random() < (1.0 / label_cnt) ** 0.5:
                 current_sample.append(candidate)
                 missing -= 1
-            
+
             self.index += 1
             if self.index == len(self.image_metadata):
                 self.index = 0
@@ -244,7 +255,7 @@ class MitoticSpindleSampler():
 
         for i in range(40):
             self.image_metadata.extend(positives)
-    
+
     def sample(self):
 
         current_sample = []
@@ -257,7 +268,7 @@ class MitoticSpindleSampler():
                 random.shuffle(self.image_metadata)
 
             current_sample.extend(self.image_metadata[self.index : self.index + missing])
-            
+
             self.index += missing
             if self.index >= len(self.image_metadata):
                 self.index = 0
@@ -284,7 +295,7 @@ class UpSampleSampler(FairSampler):
 
             for x in self.image_metadata:
                 if x.relabel.get(12, 0) == 0.69:
-                    x.relabel[12] = 1.0   
+                    x.relabel[12] = 1.0
 
         #self.image_metadata.extend([x for x in self.image_metadata if x.relabel.get(label, 0) >= 0.99])
 
@@ -307,7 +318,7 @@ class ClassicSamplerWithLBalancer():
         self.image_metadata.extend(extra_data)
         print("LEN:", len(self.image_metadata))
         self.sample_size = len(self.image_metadata)
-    
+
     def sample(self):
 
         current_sample = []
@@ -320,7 +331,7 @@ class ClassicSamplerWithLBalancer():
                 random.shuffle(self.image_metadata)
 
             current_sample.extend(self.image_metadata[self.index : self.index + missing])
-            
+
             self.index += missing
             if self.index >= len(self.image_metadata):
                 self.index = 0
@@ -362,7 +373,7 @@ class OverfitUnderfitSampler():
         while len(self.selected) < self.sample_size:
             rand_val = random.randint(0, len(self.image_metadata)-1)
             self.selected.append(self.image_metadata[rand_val])
-        
+
         return self.selected
 
 class ParetoSampler():
@@ -381,7 +392,7 @@ class ParetoSampler():
 
         self.selected = image_metadata[:self.sample_size]
         self.pool = image_metadata[self.sample_size:]
-    
+
     def move_images(self, move_from, move_to, size, shuffle_from=False):
 
         if shuffle_from:
@@ -425,13 +436,13 @@ class TrainImbalanceDataLoaderGenerator():
             self.transforms = transforms.Compose([transforms.ToTensor()])
         else:
             self.transforms = image_transforms
-        
+
         self.set_active_labels_and_reset(active_labels)
 
     def set_active_labels_and_reset(self, active_labels):
         self.active_labels = set(active_labels)
         self.reset()
-        
+
     def reset(self):
 
         self.last_dataset = None
@@ -453,10 +464,10 @@ class TrainImbalanceDataLoaderGenerator():
                         label_list = images_per_label_map[label]
                         label_list.append(image_metadata)
                         is_positive = True
-                
+
                 if not is_positive:
                     negative_list.append(image_metadata)
-        
+
             self.samplers = []
 
             for label in self.active_labels:
