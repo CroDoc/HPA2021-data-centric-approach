@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input_folder', help='input folder', action='store', required=True)
     parser.add_argument('-o', '--output_folder', default = 'CAM_output', help='output folder', action='store')
-    parser.add_argument('-n', '--network_weights', default='network/b0-resize-and-pad-e13.pt', help='weights location for EfficientNet network', action='store')
+    parser.add_argument('-n', '--network_weights', default='final_models/b0-resize-and-pad-e13.pt', help='weights location for EfficientNet network', action='store')
     parser.add_argument('--network', default='efficientnet-b0', help='EfficientNet network name - change if using b4', action='store')
     parser.add_argument('-b', '--batch_size', default=8, help='batch size', action='store', type=int)
     parser.add_argument('-w', '--workers', default=16, help='number of workers', action='store', type=int)
