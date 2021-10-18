@@ -42,12 +42,14 @@ def run(opt):
     cam_loader, dataset = get_cam_loader(opt.input_folder, opt.batch_size, opt.workers)
     net = get_efficient_net_b0(opt.network_weights)
 
-    #print(net)
-    #return
-
-    #target_layer = net._blocks[-1]
-    #target_layer = net._conv_head
-    target_layer = net._bn1
+    if opt.gradcam_layer == 'last_block':
+        target_layer = net._blocks[-1]
+    elif opt.gradcam_layer == 'conv_head':
+        target_layer = net._conv_head
+    elif opt.gradcam_layer == 'bn1':
+        target_layer = net._bn1
+    else:
+        raise Exception('Invalid gradcam layer!')
 
     cam = GradCAM(model=net, target_layer=target_layer, use_cuda=(device=="cuda:0"))
 
@@ -77,9 +79,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input_folder', help='input folder', action='store', required=True)
     parser.add_argument('-o', '--output_folder', default = 'CAM_output', help='output folder', action='store')
-    parser.add_argument('-n', '--network_weights', default='network/efficientnet_b0.pt', help='weights location for EfficientNetB0 network', action='store')
+    parser.add_argument('-n', '--network_weights', default='network/b0-resize-and-pad-e13.pt', help='weights location for EfficientNet network', action='store')
+    parser.add_argument('--network', default='efficientnet-b0', help='EfficientNet network name - change if using b4', action='store')
     parser.add_argument('-b', '--batch_size', default=8, help='batch size', action='store', type=int)
     parser.add_argument('-w', '--workers', default=16, help='number of workers', action='store', type=int)
+    parser.add_argument('--gradcam_layer', default='bn1', help='layer for grad_cam - last_block, conv_head or bn1', action='store')
 
     opt = parser.parse_known_args()[0]
 
