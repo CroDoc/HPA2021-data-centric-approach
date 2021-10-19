@@ -7,6 +7,30 @@ import pickle
 import torch
 from efficientnet_pytorch import EfficientNet
 
+def get_efficient_net(network_name, state_dict_path, device):
+
+    if network_name != 'efficientnet-b0' and network_name != 'efficientnet-b4':
+        raise Exception('only efficientnet-b0 and efficientnet-b4 allowed')
+
+    net = EfficientNet.from_name(network_name, in_channels=4, num_classes=18, image_size=512)
+
+    if network_name == 'efficientnet-b0':
+        net._fc = nn.Sequential(nn.Linear(1280, 18), nn.Sigmoid())
+    elif network_name == 'efficientnet-b4':
+        net._fc = nn.Sequential(nn.Linear(1792, 18), nn.Sigmoid())
+    else:
+        raise Exception('invalid network')
+
+    if torch.cuda.is_available():
+        net.load_state_dict(torch.load(state_dict_path))
+        net.to(device)
+    else:
+        net.load_state_dict(torch.load(state_dict_path ,map_location=device))
+
+    net.eval()
+
+    return net
+
 class NetworkWrapper():
     def __init__(self, output_labels, use_cuda=True, network = None, input_channels = 4):
 
@@ -24,12 +48,12 @@ class NetworkWrapper():
             self.network = self.generate_new_network()
             self.set_input_layer()
             self.set_output_layer()
-        
+
         if self.use_cuda:
             self.network.cuda()
-        
+
         print(self.network)
-    
+
     @abstractmethod
     def generate_new_network(self):
         pass
@@ -51,13 +75,13 @@ class NetworkWrapper():
         for name, param in self.network.named_parameters():
             print (name)
         for param in self.network.parameters():
-            
+
             param.requires_grad = False
 
             freeze -= 1
             if freeze == 0:
                 break
-    
+
     def unfreeze_parameters(self):
         for param in self.network.parameters():
             param.requires_grad = True
@@ -75,18 +99,18 @@ class CustomResNet50(NetworkWrapper):
 
         #model.layer3 = Identity()
         #model.layer4 = Identity()
-        
+
         return model
-    
+
     def set_output_layer(self):
         self.network.fc = nn.Sequential(nn.Linear(2048, self.output_size), nn.Sigmoid())
 
     def set_input_layer(self):
         layer = self.network.conv1
-                
-        new_layer = nn.Conv2d(in_channels=self.input_channels, 
-                        out_channels=layer.out_channels, 
-                        kernel_size=layer.kernel_size, 
+
+        new_layer = nn.Conv2d(in_channels=self.input_channels,
+                        out_channels=layer.out_channels,
+                        kernel_size=layer.kernel_size,
                         stride=layer.stride,
                         padding=layer.padding,
                         bias=layer.bias)
@@ -108,18 +132,18 @@ class CustomResNet34(NetworkWrapper):
 
         #model.layer3 = Identity()
         #model.layer4 = Identity()
-        
+
         return model
-    
+
     def set_output_layer(self):
         self.network.fc = nn.Sequential(nn.Linear(512, self.output_size), nn.Sigmoid())
 
     def set_input_layer(self):
         layer = self.network.conv1
-                
-        new_layer = nn.Conv2d(in_channels=self.input_channels, 
-                        out_channels=layer.out_channels, 
-                        kernel_size=layer.kernel_size, 
+
+        new_layer = nn.Conv2d(in_channels=self.input_channels,
+                        out_channels=layer.out_channels,
+                        kernel_size=layer.kernel_size,
                         stride=layer.stride,
                         padding=layer.padding,
                         bias=layer.bias)
@@ -141,18 +165,18 @@ class CustomResNet18(NetworkWrapper):
 
         #model.layer3 = Identity()
         #model.layer4 = Identity()
-        
+
         return model
-    
+
     def set_output_layer(self):
         self.network.fc = nn.Sequential(nn.Linear(512, self.output_size), nn.Sigmoid())
 
     def set_input_layer(self):
         layer = self.network.conv1
-                
-        new_layer = nn.Conv2d(in_channels=self.input_channels, 
-                        out_channels=layer.out_channels, 
-                        kernel_size=layer.kernel_size, 
+
+        new_layer = nn.Conv2d(in_channels=self.input_channels,
+                        out_channels=layer.out_channels,
+                        kernel_size=layer.kernel_size,
                         stride=layer.stride,
                         padding=layer.padding,
                         bias=layer.bias)
@@ -173,7 +197,7 @@ class EfficientNetWrapper(NetworkWrapper):
         in_channels = self.input_channels
         model = EfficientNet.from_pretrained(model_name, in_channels=in_channels, num_classes=len(self.output_labels), image_size=512)
         return model
-    
+
     def set_output_layer(self):
         self.network._fc = nn.Sequential(nn.Linear(1280, self.output_size), nn.Sigmoid())
         return
@@ -186,7 +210,7 @@ class EfficientNetWrapper4(NetworkWrapper):
         in_channels = self.input_channels
         model = EfficientNet.from_pretrained(model_name, in_channels=in_channels, num_classes=len(self.output_labels), image_size=512)
         return model
-    
+
     def set_output_layer(self):
         self.network._fc = nn.Sequential(nn.Linear(1792, self.output_size), nn.Sigmoid())
         return
@@ -201,20 +225,20 @@ class ResNet18(NetworkWrapper):
 
         if yellow:
             self.add_yellow(model)
-        
+
         return model
-    
+
     def attach_output_layer(self, output_size):
         self.network.fc = nn.Sequential(nn.Dropout(p=0.3), nn.Linear(512, output_size), nn.Sigmoid())
 
     def add_yellow(self, model):
         new_in_channels = 4
         layer = model.conv1
-                
-        new_layer = nn.Conv2d(in_channels=new_in_channels, 
-                        out_channels=layer.out_channels, 
-                        kernel_size=layer.kernel_size, 
-                        stride=layer.stride, 
+
+        new_layer = nn.Conv2d(in_channels=new_in_channels,
+                        out_channels=layer.out_channels,
+                        kernel_size=layer.kernel_size,
+                        stride=layer.stride,
                         padding=layer.padding,
                         bias=layer.bias)
 
@@ -239,20 +263,20 @@ class DenseNet121(NetworkWrapper):
 
         if yellow:
             self.add_yellow(model)
-        
+
         return model
-    
+
     def attach_output_layer(self, output_size):
         self.network.classifier = nn.Sequential(nn.Linear(1024, output_size), nn.Sigmoid())
 
     def add_yellow(self, model):
         new_in_channels = 4
         layer = model.features[0]
-                
-        new_layer = nn.Conv2d(in_channels=new_in_channels, 
-                        out_channels=layer.out_channels, 
-                        kernel_size=layer.kernel_size, 
-                        stride=layer.stride, 
+
+        new_layer = nn.Conv2d(in_channels=new_in_channels,
+                        out_channels=layer.out_channels,
+                        kernel_size=layer.kernel_size,
+                        stride=layer.stride,
                         padding=layer.padding,
                         bias=layer.bias)
 

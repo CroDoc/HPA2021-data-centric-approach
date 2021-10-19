@@ -22,3 +22,5 @@ pip install efficientnet_pytorch
 pip install ttach
 pip install tqdm
 pip install grad-cam
+
+pip install openpyxl

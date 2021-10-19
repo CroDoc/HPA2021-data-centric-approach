@@ -14,30 +14,13 @@ csv_file = 'data/train.csv'
 
 LABEL_COUNT = 19
 
-def get_cam_loader(input_folder, batch_size, num_workers):
-    cam_cells = sorted(set(x.rsplit('_', 1)[0] for x in os.listdir(input_folder)))
-    cam_metadata = []
-
-    for cam_cell in cam_cells:
-        cam_metadata.append(ImageMetadata(cam_cell, input_folder, image_labels = None, metric_labels = None))
-
-    dataset = HPACellDataset(cam_metadata, label_map = None, transforms = transforms.Compose([transforms.ToTensor()]), is_test = True)
-    cam_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-
-    return cam_loader, dataset
-
-def get_test_loader(test_dir, batch_size = 32, num_workers = 16):
-    image_id_to_image_name = generate_image_id_to_image_names_dictionary(test_dir)
-
-    test_images = [row[0] for row in csv.reader(open('data/sample_submission.csv', 'r')) if row[0] != 'ID']
-
+def get_test_loader(input_folder, batch_size, num_workers):
+    test_cells = sorted(set(x.rsplit('_', 1)[0] for x in os.listdir(input_folder)))
     test_metadata = []
 
-    for test_image in test_images:
-        for test_cell in image_id_to_image_name[test_image]:
-            test_metadata.append(ImageMetadata(test_cell, test_dir, image_labels = None, metric_labels = None))
+    for test_cell in test_cells:
+        test_metadata.append(ImageMetadata(test_cell, input_folder, image_labels = None, metric_labels = None))
 
-    print("TM:", len(test_metadata))
     dataset = HPACellDataset(test_metadata, label_map = None, transforms = transforms.Compose([transforms.ToTensor()]), is_test = True)
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 

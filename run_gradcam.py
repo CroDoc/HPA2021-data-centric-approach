@@ -12,35 +12,21 @@ import argparse
 import cv2
 import numpy as np
 
-from efficientnet_pytorch import EfficientNet
-from code.dataset_generator import get_cam_loader
+from code.dataset_generator import get_test_loader
+from code.networks import get_efficient_net
 
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def get_efficient_net_b0(state_dict_path):
-    net = EfficientNet.from_name('efficientnet-b0', in_channels=4, num_classes=18, image_size=512)
-    net._fc = nn.Sequential(nn.Linear(1280, 18), nn.Sigmoid())
-
-    if torch.cuda.is_available():
-        net.load_state_dict(torch.load(state_dict_path))
-        net.to(device)
-    else:
-        net.load_state_dict(torch.load(state_dict_path ,map_location=device))
-
-    net.eval()
-
-    return net
-
 def run(opt):
 
     if not os.path.exists(opt.output_folder):
         os.makedirs(opt.output_folder)
 
-    cam_loader, dataset = get_cam_loader(opt.input_folder, opt.batch_size, opt.workers)
-    net = get_efficient_net_b0(opt.network_weights)
+    cam_loader, dataset = get_test_loader(opt.input_folder, opt.batch_size, opt.workers)
+    net = get_efficient_net(opt.network, opt.network_weights, device)
 
     if opt.gradcam_layer == 'last_block':
         target_layer = net._blocks[-1]
