@@ -3,7 +3,7 @@
 The easiest way is to use the code from this repo is to run it in a docker container. We suggest using the official pytorch [docker image](https://hub.docker.com/layers/pytorch/pytorch/1.9.0-cuda11.1-cudnn8-devel/images/sha256-ed167cae955fa654cefc3663fc0c7b16ee9c8e7ed307cb03306d6ea7a9f7b37b?context=explore) and installing the requirements running:
 
 ```
-sh install-requirements.sh
+sh scripts/install-requirements.sh
 ```
 
 # Usage
@@ -159,8 +159,24 @@ Our final submissions got 0.54389 and 0.54361 on the Private Leaderboard.
 
 # Grad-CAM
 
+Create dataset:
 ```
-python segmentator.py -i CAM_images -n CAM_nuclei -c CAM_cells -b 128
-python image_cutter.py -i CAM_images -m CAM_cells -o CAM_dataset
+sh scripts/gradcam_make_dataset.sh
+```
+
+Run Grad-CAM:
+```
 python run_gradcam.py -i CAM_dataset -o CAM_output
+```
+
+Run Grad-CAM model on custom dataset without postprocessing:
+```
+python run_test.py -i CAM_images -c CAM_cells -n CAM_nuclei -d CAM_dataset -f results -o results -m b0 --no_postprocessing
+```
+
+or run all models using the following scripts:
+
+```
+sh scripts/gradcam_test_short.sh
+sh scripts/gradcam_test_long.sh
 ```
