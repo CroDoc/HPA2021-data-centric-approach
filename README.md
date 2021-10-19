@@ -159,7 +159,7 @@ Our final submissions got 0.54389 and 0.54361 on the Private Leaderboard.
 
 # Grad-CAM
 
-Create dataset:
+Create dataset (requires CAM_images folder with HPA images):
 ```
 sh scripts/gradcam_make_dataset.sh
 ```
